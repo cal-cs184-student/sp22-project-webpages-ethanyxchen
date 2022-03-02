@@ -37,7 +37,7 @@
   <div>
 
     <h2 align="middle">Overview</h2>
-    <p>In this project, we learned about the different techniques to display surfaces with a smooth and realistic appearance. In Section I: task 1 and 2, we concentrated on using de Casteljau’s algorithm to create smooth Bezier curves and surfaces based on a given set of control points. In particular, the algorithm provided a recursive approach that interpolated together control points to find the surface points required to evaluate a smooth Bezier surface. However, in Section II, we transitioned into using triangle meshes to display smooth surfaces, because Bezier surfaces are much more difficult to render. After looking online, we discovered that this is because it is difficult to ray trace without using techniques like loop subdivision that utilize triangle meshes. One advantage of using triangle meshes was seen in task 3, where we utilized area-weighted vertex normals to achieve smoother shading - compared to the original flat shading. This technique was obviously very effective in our comparison of how the teapots were shaded in Figure 3.1 and 3.2 respectively. Next, in task 4 and 5, we implemented the steps required for half-edge flips and splits. The importance of these tools were evident in task 6, where we implemented loop subdivision for mesh upsampling. This essentially allowed us to convert very basic polygons into higher-resolution ones with smoother and more realistic displays by adding new vertices to the triangle mesh. Altogether, the tools we built throughout this project allowed us to render smooth and realistic 1D, 2D, and 3D polygons using techniques such as de Casteljau’s algorithm and triangle meshes. </p>
+    <p>In this project, we learned about the different techniques to display surfaces with a smooth and realistic appearance. In Section I: task 1 and 2, we concentrated on using de Casteljau’s algorithm to create smooth Bezier curves and surfaces based on a given set of control points. In particular, the algorithm provided a recursive approach that interpolated together control points to find the surface points required to evaluate a smooth Bezier surface. However, in Section II, we transitioned into using triangle meshes to display smooth surfaces, because Bezier surfaces are much more difficult to render. After looking online, we discovered that this is because it is difficult to ray trace without using techniques like loop subdivision that utilize triangle meshes. One advantage of using triangle meshes was seen in task 3, where we utilized area-weighted vertex normals to achieve smoother shading - compared to the original flat shading. This technique was obviously very effective in our comparison of how the teapots were shaded in Figure 3.1 and 3.2 respectively. Next, in task 4 and 5, we implemented the steps required for half-edge flips and splits. The importance of these tools was evident in task 6, where we implemented loop subdivision for mesh upsampling. This essentially allowed us to convert very basic polygons into higher-resolution ones with smoother and more realistic displays by adding new vertices to the triangle mesh. Altogether, the tools we built throughout this project allowed us to render smooth and realistic 1D, 2D, and 3D polygons using techniques such as de Casteljau’s algorithm and triangle meshes. </p>
 
     <h2 align="middle">Section I: Bezier Curves and Surfaces</h2>
     
@@ -92,9 +92,9 @@
     <br>
     <h3 align="middle">Part 2: Bezier surfaces with separable 1D de Casteljau subdivision</h3>
     
-    <p>De Casteljau’s algorithm extends to Bezier surfaces because we are essentially applying the same algorithm twice - to multiple sets of control points. In an n x n grid, each n x 1 set of control points (in the u dimension) are interpolated together to eventually form their own Bezier curve: in total we have n Bezier curves in the u dimension. On each of those n curves, the given u value is associated with a new control point, that when put together, creates a new set of control points (in the v dimension) that can be used to create a Bezier curve for that value of u. Using the same 1D de Casteljau’s algorithm we used before, we can evaluate for a single, final point (known as the surface point) at position v on this “moving” Bezier curve, thus allowing us to combine the u and v dimensions to evaluate a Bezier surface. </p>
+    <p>De Casteljau’s algorithm extends to Bezier surfaces because we are essentially applying the same algorithm twice - to multiple sets of control points. In an n x n grid, each n x 1 set of control points (in the u dimension) are interpolated together to eventually form their own Bezier curve: in total we have n Bezier curves in the u dimension. On each of those n curves, the given u value is associated with a new control point, that when put together, creates a new set of control points (in the v dimension) that can be used to create a Bezier curve for that value of u. Using the same 1D de Casteljau’s algorithm we used before, we can evaluate for a single, final point (known as the surface point) at position v on this “moving” Bezier curve, thus allowing us to combine the u and v dimensions to evaluate a Bezier surface.  </p>
     
-    <p> In our implementation, we followed the procedure outlined above, by using the 1D de Casteljau’s algorithm on the u dimension of the controlPoints member variable, followed by using it again on the set of control points defined by variable u on the Bezier curves in the u dimension. By calling evaluate1D() on each set of control points in the u dimension, we compose a vector of length n (on an n x n grid) that can be passed into evaluate1D() again to find the surface point in dimension v. </p>
+    <p> In our implementation, we followed the procedure outlined above, by using the 1D de Casteljau’s algorithm on the u dimension of the controlPoints member variable, followed by using it again on the set of control points defined by variable u on the Bezier curves in the u dimension. By calling evaluate1D() on each set of control points in the u dimension, we compose a vector of length n (on an n x n grid) that can be passed into evaluate1D() again to find the surface point in dimension v.  </p>
 
     <div align="middle">
     <img src="img/t2.png" width="400px"/>
@@ -106,9 +106,9 @@
     
     <h3 align="middle">Part 3: Average normals for half-edge meshes</h3>
     
-    <p> In order to calculate the area-weighted vertex normals, we selected the specific vertex. We then iterated through all the different faces incident to the vertex. This was done by retrieving the specific halfedge of the vertex, and getting the normal of the face belonging to that halfedge. We then looped through the rest of the faces by getting the next half edge of the twin half edge of the current halfedge, and added up the face normals in a vector. It should be noted that the magnitude of the normal is equivalent to the 2 times the area of the face as the magnitude of the cross product of two vectors will yield the area of the parallelogram of those two vectors. Since we divided the sum vector by its norm, whether we divide each normal by 2 doesn’t really matter as the 2 would be shown in the norm as well. Lastly, we returned this vector divided by its norm. </p>
+    <p> In order to calculate the area-weighted vertex normals, we first select the specific vertex. We then iterated through all the different faces incident to the vertex. This was done by retrieving the specific halfedge of the vertex, and getting the normal of the face belonging to that halfedge. We then looped through the rest of the faces by getting the next half edge of the twin half edge of the current halfedge, and added up the face normals in a vector. It should be noted that the magnitude of the normal is equivalent to 2 times the area of the face as the magnitude of the cross product of two vectors will yield the area of the parallelogram of those two vectors. Since we divided the sum vector by its norm, whether we divide each normal by 2 doesn’t really matter as the 2 would be shown in the norm as well. Lastly, we returned this vector divided by its norm.  </p>
     
-    <p> In the screenshots below, it can be seen that with the vertex-normals we get smooth shading between different triangles and the teapot looks like one entity. Without the vertex-normals, the shading is not smooth at all between the different triangles that make the teapot mesh and the teapot looks exactly like a mesh put together to look like a teapot. </p>
+    <p> In the screenshots attached, it can be seen that with the vertex-normals we get smooth shading between different triangles and the teapot looks like one entity. Without the vertex-normals, the shading is not smooth at all between the different triangles that make the teapot mesh and the teapot looks exactly like a mesh put together to look like a teapot.</p>
     
     <div align="middle">
       <table style="width=100%">
@@ -197,37 +197,10 @@
     <br>
     <h3 align="middle">Part 6: Loop subdivision for mesh upsampling</h3>
     
-    <ul>
-        <li>In order to implement the loop subdivision, we first iterated through all vertices in the mesh by starting at mesh.verticesBegin() and going until mesh.verticesEnd(). </li>
-        <br>
-        <li>For each vertex, we calculated the vertex degree, the constant u, and the new position of the vertex using this equation: </li>
-        <ul>
-            <li><b>(1.0 - n * u) * (v->position) + (neighbourSum * u)</b></li>
-            <li>In this case, neighboursSum is the sum of the positions of the neighboring vertices which we looped through by retrieving the next halfedge of the twin halfedge of the current halfedge where the current halfedge initially is set to the given vertices halfedge. </li>
-        </ul>
-        <br>
-        <li>The new position is then stored in vertex->newPosition. We compute the positions of the new vertices that would be added when splitting an edge.</li>
-        <ul>
-            <li>This was done by iterating through the edges, getting the designated vertices around the edge and calculating the new position using this equation:</li>
-            <ul>
-                <li><b>(3.0/8.0) * (a->position + b->position) + (1.0 / 8.0) * (c->position + d->position)</b></li>
-                <li> Where a and b are the vertices connecting the edge and c and d are the vertices shared by a and b.</li>
-            </ul>
-            <li>Again, the new positions were stored in edge->newPosition.</li>
-        </ul>
-        <br>
-        <li>Then we went about iterating through all the original edges and splitting them. The new vertex that was abstained will have its newPosition set to the newPosition of the given edge.</li>
-        <br>
-        <li>We also set the isNew flags of the new and old edges derived from the split correspondingly.</li>
-        <ul>
-            <li>In doing so, we then iterated through all the new edges and flipped the edges that were A) new and B) connected a new and an old vertex. </li>
-            <li>Lastly, we iterated through all the vertices and set their positions according to their newPosition attribute.</li>
-        </ul>
-        
-    </ul>
+    <p>In order to implement the loop subdivision, we first iterated through all vertices in the mesh by starting at mesh.verticesBegin() and going until mesh.verticesEnd(). For each vertex, we calculated the vertex degree, the constant u, and the new position of the vertex using this equation: (1.0 - n * u) * v->position + (neighbourSum * u). In this case, neighboursSum is the sum of the positions of the neighboring vertices which we looped through by retrieving the next halfedge of the twin halfedge of the current halfedge where the current halfedge initially is set to the given vertex’s halfedge. The new position is then stored in vertex->newPosition. We then computed the positions of the new vertices that would be added when splitting an edge. This was done by iterating through the edges, getting the designated vertices around the edge and calculating the new position using this equation: (3.0/8.0) * (a->position + b->position) + (1.0 / 8.0) * (c->position + d->position) where a and b are the vertices connecting the edge and c and d are the vertices shared by a and b. Again, the new positions were stored in edge->newPosition. Then we went about iterating through all the original edges and splitting them. The new vertex that was obtained had its newPosition set to the newPosition of the given edge. We also set the isNew flags of the new and old edges derived from the split and the new vertex correspondingly. We then iterated through all the new edges and flipped the edges that were new and connected a new and an old vertex. Lastly, we iterated through all the vertices and set their positions according to their newPosition attribute. </p>
     
+    <p>One cool implementation trick we used was to keep a counter when iterating through the edges at the very beginning. This allowed us to get the total number of original edges and iterate only through them when splitting/creating edges. One thing that was very annoying were floating point errors. We came to the realization that if we used double, or even int for n which is an int but gets multiplied by a float, we got some errors. We got around this by storing our numbers as floats and with decimals.</p>
     
-           
     
     <div align="middle">
       <table style="width=100%">
@@ -282,7 +255,7 @@
     
     <figcaption align="middle">Fig 6.2: The cube/sphere is noticeably more symmetrical after repeated subdivisions, after pre-splitting triangle faces on the original cube.</figcaption>
     <div align="middle">
-        <p>The reason why edge-splitting triangle faces on the original cube helps to keep the shape symmetrical throughout repeated subdivisions is because in doing so, we are making the starting shape more symmetrical. In figure 6.1, we notice that that the starting shape has diagonal triangle edges across each cube face - which makes the shape inherently asymmetrical from the very beginning. Hence, when we loop divide each shape, we are losing volume on the edges/faces in an asymmetrical manner. So, by edge-splitting the cube's faces at the beginning, we ensure that we are losing volume on each edge/face in a consistent manner that keeps the symmetry of the shape. </p>
+        <p>The reason why edge-splitting triangle faces on the original cube helps to keep the shape symmetrical throughout repeated subdivisions is because in doing so, we are making the starting shape more symmetrical. In the original cube in Figure 6.1, we notice that the edges are not oriented equally on each face. While one edge may start from the top left and end on the bottom right of the cube’s face, another edge will start from the bottom left and end on the top right. Hence, when we loop divide each shape, we are losing volume on the edges/faces in an asymmetrical manner. To combat this, we split all the edges on all six faces of the cube. As shown in Figure 6.2, after performing loop subdivisions, each face changes volume exactly like the others as the edges on those faces are oriented the same way. This allows the cube to be symmetrical rather than asymmetric.</p>
     </div>
 
 
@@ -290,6 +263,11 @@
     <p>If you are not participating in the optional mesh competition, don't worry about this section!</p>
 
     <h3 align="middle">Part 7: Design your own mesh!</h3>
+    
+
+    <p align="center">
+    <a href="https://cal-cs184-student.github.io/sp22-project-webpages-ethanyxchen/proj2/index.html">Click here to navigate to project webpage</a>
+    </p>
 
 </body>
 
