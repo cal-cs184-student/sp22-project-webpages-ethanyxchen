@@ -1,7 +1,296 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+<head>
+  <style>
+    body {
+      padding: 100px;
+      width: 1000px;
+      margin: auto;
+      text-align: left;
+      font-weight: 300;
+      font-family: 'Open Sans', sans-serif;
+      color: #121212;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4 {
+      font-family: 'Source Sans Pro', sans-serif;
+    }
+  </style>
+  <title>CS 184 Mesh Editor</title>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+  <h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h1>
+  <h1 align="middle">Project 2: Mesh Editor</h1>
+  <h2 align="middle">Ahmed Baqai and Ethan Chen, CS184-p2-meshedit-sp22-chebaq</h2>
+
+  <br><br>
+
+  <div>
+
+    <h2 align="middle">Overview</h2>
+    <p>In this project, we learned about the different techniques to display surfaces with a smooth and realistic appearance. In Section I: task 1 and 2, we concentrated on using de Casteljau’s algorithm to create smooth Bezier curves and surfaces based on a given set of control points. In particular, the algorithm provided a recursive approach that interpolated together control points to find the surface points required to evaluate a smooth Bezier surface. However, in Section II, we transitioned into using triangle meshes to display smooth surfaces, because Bezier surfaces are much more difficult to render. After looking online, we discovered that this is because it is difficult to ray trace without using techniques like loop subdivision that utilize triangle meshes. One advantage of using triangle meshes was seen in task 3, where we utilized area-weighted vertex normals to achieve smoother shading - compared to the original flat shading. This technique was obviously very effective in our comparison of how the teapots were shaded in Figure 3.1 and 3.2 respectively. Next, in task 4 and 5, we implemented the steps required for half-edge flips and splits. The importance of these tools were evident in task 6, where we implemented loop subdivision for mesh upsampling. This essentially allowed us to convert very basic polygons into higher-resolution ones with smoother and more realistic displays by adding new vertices to the triangle mesh. Altogether, the tools we built throughout this project allowed us to render smooth and realistic 1D, 2D, and 3D polygons using techniques such as de Casteljau’s algorithm and triangle meshes. </p>
+
+    <h2 align="middle">Section I: Bezier Curves and Surfaces</h2>
+    
+    <h3 align="middle">Part 1: Bezier curves with 1D de Casteljau subdivision</h3>
+
+    <p>De Casteljau's algorithm works by inserting points on edges between points using linear interpolation. The location of the inserted points depend on a given parameter, t. Consecutive newly inserted points are then connected, thus creating "new edges". These steps are recursively applied, until we eventually arrive at one final, single point. This point lies on the final Bezier curve that connects the first and last control points.</p>
+    
+    <p>In order to implement De Casteljau's algorithm to evaluate Bezier curves, we simply used a for loop that iterates through the 2D vector points provided and lerps together consecutive points to create the "newly inserted points". The lerped points are then added to a 2D vector that is used for the next recursive iteration. Using this strategy, a single, final point will eventually be found and returned in a 1-element 2D vector. This point is on the Bezier curve, which in combination with the first and last original control points, makes up the Bezier curve for the given set of control points. </p>
+
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/t1_1.png" align="middle" width="400px" />
+            <figcaption align="middle">Step 0</figcaption>
+          </td>
+          <td>
+            <img src="img/t1_2.png" align="middle" width="400px" />
+            <figcaption align="middle">Step 1</figcaption>
+          </td>
+        </tr>
+        <br>
+        <tr>
+          <td>
+            <img src="img/t1_3.png" align="middle" width="400px" />
+            <figcaption align="middle">Step 2</figcaption>
+          </td>
+          <td>
+            <img src="img/t1_4.png" align="middle" width="400px" />
+            <figcaption align="middle">Step 3</figcaption>
+          </td>
+        </tr>
+        <br>
+        <tr>
+          <td>
+            <img src="img/t1_5.png" align="middle" width="400px" />
+            <figcaption align="middle">Step 4</figcaption>
+          </td>
+          <td>
+            <img src="img/t1_6.png" align="middle" width="400px" />
+            <figcaption align="middle">Step 5</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+    
+    <div align="middle">
+    <img src="img/t1_diff.png" width="400px"/>
+    <figcaption align="middle">A slightly different Bezier curve with parameter <b>t</b> modified.</figcaption>
+    </div>
+
+    <br>
+    <h3 align="middle">Part 2: Bezier surfaces with separable 1D de Casteljau subdivision</h3>
+    
+    <p>De Casteljau’s algorithm extends to Bezier surfaces because we are essentially applying the same algorithm twice - to multiple sets of control points. In an n x n grid, each n x 1 set of control points (in the u dimension) are interpolated together to eventually form their own Bezier curve: in total we have n Bezier curves in the u dimension. On each of those n curves, the given u value is associated with a new control point, that when put together, creates a new set of control points (in the v dimension) that can be used to create a Bezier curve for that value of u. Using the same 1D de Casteljau’s algorithm we used before, we can evaluate for a single, final point (known as the surface point) at position v on this “moving” Bezier curve, thus allowing us to combine the u and v dimensions to evaluate a Bezier surface. </p>
+    
+    <p> In our implementation, we followed the procedure outlined above, by using the 1D de Casteljau’s algorithm on the u dimension of the controlPoints member variable, followed by using it again on the set of control points defined by variable u on the Bezier curves in the u dimension. By calling evaluate1D() on each set of control points in the u dimension, we compose a vector of length n (on an n x n grid) that can be passed into evaluate1D() again to find the surface point in dimension v. </p>
+
+    <div align="middle">
+    <img src="img/t2.png" width="400px"/>
+    <figcaption align="middle">Fig 2.1: bez/teapot.bez evaluated using our implementation de Casteljau's algorithm to evaluate Bezier surfaces.</figcaption>
+    </div>
+
+
+    <h2 align="middle">Section II: Sampling</h2>
+    
+    <h3 align="middle">Part 3: Average normals for half-edge meshes</h3>
+    
+    <p> In order to calculate the area-weighted vertex normals, we selected the specific vertex. We then iterated through all the different faces incident to the vertex. This was done by retrieving the specific halfedge of the vertex, and getting the normal of the face belonging to that halfedge. We then looped through the rest of the faces by getting the next half edge of the twin half edge of the current halfedge, and added up the face normals in a vector. It should be noted that the magnitude of the normal is equivalent to the 2 times the area of the face as the magnitude of the cross product of two vectors will yield the area of the parallelogram of those two vectors. Since we divided the sum vector by its norm, whether we divide each normal by 2 doesn’t really matter as the 2 would be shown in the norm as well. Lastly, we returned this vector divided by its norm. </p>
+    
+    <p> In the screenshots below, it can be seen that with the vertex-normals we get smooth shading between different triangles and the teapot looks like one entity. Without the vertex-normals, the shading is not smooth at all between the different triangles that make the teapot mesh and the teapot looks exactly like a mesh put together to look like a teapot. </p>
+    
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/t3_default_flat_shading.png" align="middle" width="400px" />
+            <figcaption align="middle">Fig 3.1: Teapot rendered using default flat shading.</figcaption>
+          </td>
+          <td>
+            <img src="img/t3_phong_shading.png" align="middle" width="400px" />
+            <figcaption align="middle">Fig 3.2: Teapot rendered using Blinn-Phong shading model.</figcaption>
+          </td>
+        </tr>
+        <br>
+      </table>
+    </div>
+
+    <br>
+    <h3 align="middle">Part 4: Half-edge flip</h3>
+    
+    <p> To implement the half-edge flip procedure, we used the following steps: </p>
+    <ul>
+        <li>We assigned all elements, including half-edges, edges, vertices, and faces to temporary variables that are used to keep track of each element.</li>
+        <li>Next, we reassigned all elements’ half edges to the correct elements in the post-edge-flip mesh. This includes the e0 edgeIter that was passed into the flipEdge() function in the beginning. To avoid confusion, this process included half edges whose associated elements were not being changed as well. </li>
+        <li>Next, we assigned all half edges’ twins to temporary variables, which is helpful when we reference them when we call setNeighbors() on all 6 half edges. </li>
+        <li>Finally, we set the next, twin, vertex, edge, and face elements for each of the six half edges using the provided setNeighbors() function. After doing so, the half-edge flip is complete and we simply return edgeIter e0.</li>
+    </ul>
+    
+    <p>The most helpful debugging tricks that were applicable for this task was simply writing down on a piece of paper exactly what elements are changing and which are staying the same during the edge flip process. From there, it was pretty straightforward just reassigning the pointers. </p>
+    
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/t4_pre_edgeflip.png" align="middle" width="400px" />
+            <figcaption align="middle">Fig 4.1: Teapot before edge flipping.</figcaption>
+          </td>
+          <td>
+            <img src="img/t4_post_edgeflip.png" align="middle" width="400px" />
+            <figcaption align="middle">Fig 4.2: Teapot after edge flipping.</figcaption>
+          </td>
+        </tr>
+        <br>
+      </table>
+    </div>
+
+    <br>
+    <h3 align="middle">Part 5: Half-edge split</h3>
+    <p>To implement the half-edge split procedure, we used the following steps:</p>
+    <ul>
+        <li>Create new features for the two new triangles that are being created. </li>
+        <li>Assign all elements, including half-edges, edges, vertices and faces to temporary variables to be used later on.</li>
+        <li>Calculate and set the position of vertex m by finding the average of vertex c’s and vertex b’s position. Vertex C and vertex B were assigned in the previous step. </li>
+        <li>Set the correct half-edges for all vertices, edges, and faces (regardless of whether they are getting assigned new ones). The original edge that was passed into the function - e0 - is re-configured to be the upper half of the vertical edge in the edge split. </li>
+        <li>Assign all half edges’ twins to temporary variables.</li>
+        <li>Call setNeighbors on all new and old halfedges, using the twin temporary variables from the previous step. </li>
+    </ul>
+    
+    <p>Task 5 was more difficult to debug than Task 4 at times, because of how many different elements were being created. Again, illustrating everything down on a piece of paper was useful. In this procedure in particular, it was helpful to reassign the original vertical edge to be half of the new vertical edge in the edge split. In doing so, less elements had to be created and old elements could be reused, thus saving memory space.</p>
+    
+    <div align="middle">
+    <img src="img/t5_pre_everything.png" width="400px"/>
+    <figcaption align="middle">Fig 5.1: teapot.dae before edge splits and flips.</figcaption>
+    </div>
+
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/t5_edge_split.png" align="middle" width="400px" />
+            <figcaption align="middle">Fig 5.2: teapot.dae after edge splits.</figcaption>
+          </td>
+          <td>
+            <img src="img/t5_edge_split_flip_combo.png" align="middle" width="400px" />
+            <figcaption align="middle">Fig 5.3: teapot.dae after edge splits and flips.</figcaption>
+          </td>
+        </tr>
+        <br>
+      </table>
+    </div>
+    
+    <div align="middle">
+    <p>Fig 5.3 - the diamond in the center is created after splitting edges followed by flipping the inner newly created edges.</p>
+    </div>
+    
+    <br>
+    <h3 align="middle">Part 6: Loop subdivision for mesh upsampling</h3>
+    
+    <ul>
+        <li>In order to implement the loop subdivision, we first iterated through all vertices in the mesh by starting at mesh.verticesBegin() and going until mesh.verticesEnd(). </li>
+        <br>
+        <li>For each vertex, we calculated the vertex degree, the constant u, and the new position of the vertex using this equation: </li>
+        <ul>
+            <li><b>(1.0 - n * u) * (v->position) + (neighbourSum * u)</b></li>
+            <li>In this case, neighboursSum is the sum of the positions of the neighboring vertices which we looped through by retrieving the next halfedge of the twin halfedge of the current halfedge where the current halfedge initially is set to the given vertices halfedge. </li>
+        </ul>
+        <br>
+        <li>The new position is then stored in vertex->newPosition. We compute the positions of the new vertices that would be added when splitting an edge.</li>
+        <ul>
+            <li>This was done by iterating through the edges, getting the designated vertices around the edge and calculating the new position using this equation:</li>
+            <ul>
+                <li><b>(3.0/8.0) * (a->position + b->position) + (1.0 / 8.0) * (c->position + d->position)</b></li>
+                <li> Where a and b are the vertices connecting the edge and c and d are the vertices shared by a and b.</li>
+            </ul>
+            <li>Again, the new positions were stored in edge->newPosition.</li>
+        </ul>
+        <br>
+        <li>Then we went about iterating through all the original edges and splitting them. The new vertex that was abstained will have its newPosition set to the newPosition of the given edge.</li>
+        <br>
+        <li>We also set the isNew flags of the new and old edges derived from the split correspondingly.</li>
+        <ul>
+            <li>In doing so, we then iterated through all the new edges and flipped the edges that were A) new and B) connected a new and an old vertex. </li>
+            <li>Lastly, we iterated through all the vertices and set their positions according to their newPosition attribute.</li>
+        </ul>
+        
+    </ul>
+    
+    
+           
+    
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/t6_basic1.png" align="middle" width="200px" />
+          </td>
+          <td>
+            <img src="img/t6_basic2.png" align="middle" width="200px" />
+          </td>
+          <td>
+            <img src="img/t6_basic3.png" align="middle" width="200px" />
+          </td>
+          <td>
+            <img src="img/t6_basic4.png" align="middle" width="200px" />
+          </td>
+          <td>
+            <img src="img/t6_basic5.png" align="middle" width="200px" />
+          </td>
+        </tr>
+        <br>
+      </table>
+    </div>
+    
+    <figcaption align="middle">Fig 6.1: The cube/sphere becomes slightly asymmetric after repeated subdivisions.</figcaption>
+    <div align="middle">
+        <p>Note that when we loop subdivide a cube, the sharp corners and edges get smoothed out. However, this causes the shape to lose some of its volume in an asymmetrical manner. To fix this, we can try and pre-split triangle edges on each face of the original cube. This is what happened: </p>
+    </div>
+
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/t6_presplit1.png" align="middle" width="200px" />
+          </td>
+          <td>
+            <img src="img/t6_presplit2.png" align="middle" width="200px" />
+          </td>
+          <td>
+            <img src="img/t6_presplit3.png" align="middle" width="200px" />
+          </td>
+          <td>
+            <img src="img/t6_presplit4.png" align="middle" width="200px" />
+          </td>
+          <td>
+            <img src="img/t6_presplit5.png" align="middle" width="200px" />
+          </td>
+        </tr>
+        <br>
+      </table>
+    </div>
+    
+    <figcaption align="middle">Fig 6.2: The cube/sphere is noticeably more symmetrical after repeated subdivisions, after pre-splitting triangle faces on the original cube.</figcaption>
+    <div align="middle">
+        <p>The reason why edge-splitting triangle faces on the original cube helps to keep the shape symmetrical throughout repeated subdivisions is because in doing so, we are making the starting shape more symmetrical. In figure 6.1, we notice that that the starting shape has diagonal triangle edges across each cube face - which makes the shape inherently asymmetrical from the very beginning. Hence, when we loop divide each shape, we are losing volume on the edges/faces in an asymmetrical manner. So, by edge-splitting the cube's faces at the beginning, we ensure that we are losing volume on each edge/face in a consistent manner that keeps the symmetry of the shape. </p>
+    </div>
+
+
+    <h2 align="middle">Section III: Optional Extra Credit</h2>
+    <p>If you are not participating in the optional mesh competition, don't worry about this section!</p>
+
+    <h3 align="middle">Part 7: Design your own mesh!</h3>
+
+</body>
+
 </html>
