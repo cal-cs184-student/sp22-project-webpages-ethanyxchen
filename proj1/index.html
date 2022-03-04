@@ -33,8 +33,8 @@
 
 <h2 align="middle">Overview</h2>
 <p>In this project we implemented rasterization with colors, rasterization with textures, and briefly did a little bit on transforms. We first started with simple rasterization where we rasterized triangles by sampling the center of pixels and filling our sample buffer with those results. This resulted in aliasing in portions of our image where there was high frequency. To remedy this, our second task was to implement supersampling where instead of just sampling once per pixel, we rewrote our algorithm to allow for sampling multiple times per pixel. This required us to expand our sample buffer to accomodate these extra samples but it allowed for increased granularity since it gave us a way to better represent pixels that are at the edge. For transforms, we filled out a matrix that allowed us to represent certain transforms such as translations, scaling, and rotations. Then, expanding on the earlier supersampled triangles, we next incorporated interpolated coloring by leveraging barycentric coordinates. This allowed us to represent points within a triangle as a weight sum of their distance from the vertices. While initially we just used this to interpolate color within a triangle, we used the same idea to apply texture to an image later on. With texture sampling, this was slightly more complicated since we now had to deal with mipmaps. The first thing we had to determine was how to get a pixel represented on the image and translate it to it's coordinates in texture space and we did this using barycentric coordinates. From there, we had two pixel sampling methods: we could either just use the texture of the nearest texel or we could bilinearly interpolate the texture from nearby texels. Finally, we also approximated the level of mipmap we should use by the formula given in lecture. This level isn't always going to be an integer so if it was between two levels we also had some options here to determine which level to sample from. We implemented the ability to just sample from the mipmap level that was closest to the desired level or we could bilinearly interpolated between the two closest levels. </p>
-<p> 
-In general, we approached each part by understanding what the task was asking us do first. Then, we implement the function(s) as best as we could by closely following the instructions. Finally, we'd check if our function worked by trying out the sample images and seeing if they rendered as we expected. There were lots of edges cases that we had to figure out the cause of and those took the most time. 
+<p>
+In general, we approached each part by understanding what the task was asking us do first. Then, we implement the function(s) as best as we could by closely following the instructions. Finally, we'd check if our function worked by trying out the sample images and seeing if they rendered as we expected. There were lots of edges cases that we had to figure out the cause of and those took the most time.
 </p>
 
 <h3 align="middle">Task 1: Drawing Single-Color Triangles</h3>
@@ -51,7 +51,7 @@ In general, we approached each part by understanding what the task was asking us
 
 <p>Supersampling algorithm: </p>
 <ul>
-    <li>Instead of just sampling the pixel at the center, we'll now instead sample each sub-pixel and see if the sub-pixel is in the triangle again using the three-line test. 
+    <li>Instead of just sampling the pixel at the center, we'll now instead sample each sub-pixel and see if the sub-pixel is in the triangle again using the three-line test.
       <li>If the sub-pixel is in the triangle, then we set that sub-pixel's cooresponding location in the sample buffer to the given color of the triangle. The sample buffer is a single indexed array with size width * height * sample_size. </li>
     <li>Finally, we transfer the supersampled sample buffer to the rgb_framebuffer_target[] array by downsampling the colors of the corresponding sub-pixel by the sample rate into get a single color value.</li>
 </ul>
@@ -224,7 +224,7 @@ In general, we approached each part by understanding what the task was asking us
 <h3 align="middle">Task 7: Draw something interesting!</h3>
 
 <p align="center">
-<a href="https://cal-cs184-student.github.io/p1-rasterizer-sp22-mamma-mia/">Click here to navigate to project webpage</a>
+<a href="https://cal-cs184-student.github.io/sp22-project-webpages-ethanyxchen/proj1/index.html">Click here to navigate to project webpage</a>
 </p>
 
 </body>
