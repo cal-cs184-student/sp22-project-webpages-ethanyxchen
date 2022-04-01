@@ -1,7 +1,205 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>  
+    div.padded {  
+      padding-top: 0px;  
+      padding-right: 100px;  
+      padding-bottom: 0.25in;  
+      padding-left: 100px;  
+    }  
+  </style> 
+<title>Ahmed Baqai and Ethan Chen Project 3.2 |  CS 184</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" href="style.css" media="screen" />
+</head>
+<body>
+<br />
+<h1 align="middle">Assignment 3, Part 2: PathTracer</h1>
+    <h2 align="middle">Ahmed Baqai, Ethan Chen</h2>
+
+    <div class="padded">
+        <p>For this assignment, we completed Part 1 and Part 4 of this project. Part 1 was very interesting to develop, especially when we saw the end product of our code, 
+            and how it was able to render reflections and refractions on the glass balls accurately. We found that each task in the spec for Part 1 helped to break down the 
+            code into a concise and organized manner, particularly with the helper reflect() and refract() methods, which themselves were only a few lines long. Then, the three sample_f()
+            methods were more like "driver" methods, and called the relevant helper methods to update wi to the reflected/refracted ray and return the right amount of reflectance. 
+            
+            Part 4 of the project was simpler, albeit it took some time to get the code to work properly, as the spec was less specific to exactly how the code should be written. We found 
+            it helpful for this implementation to rely on the ray diagram included in the Part 4 spec to fully grasp the geometry of the generated ray for a thin lens. 
+        </p>
+
+    <h2 align="middle">Part 1: Mirror and Glass Materials</h2>
+    <p>The following sequence of images are of the scene: CBspheres.dae rendered with max_ray_depth set to 0, 1, 2, 3, 4, 5, 100. The other settings are set to 64 samples per pixel and 4 samples per light. </p>
+    
+    <div align="middle">
+        <table style="width=100%">
+          <tr>
+            <td>
+              <img src="images/task1_m_0.png" align="middle" width="600px" />
+              <figcaption align="middle">(above) Fig 1.1: CBspheres.dae rendered with max_ray_depth=0</figcaption>
+            </td>
+          </tr>
+        </table>
+        <p><b>New multibounce effects and relevance to bounce numbers:</b></p>
+        <p>Since max ray depth=0, no rays are bounced, meaning only the ray directly coming from the light source is rendered.</p>
+       
+        <table style="wdith=100%">
+          <tr>
+            <td>
+                <img src="images/task1_m_1.png" align="middle" width="600px" />
+                <figcaption align="middle">(above) Fig 1.2: CBspheres.dae rendered with max_ray_depth=1</figcaption>
+              </td>
+          </tr>
+        </table>
+        <p><b>New multibounce effects and relevance to bounce numbers:</b></p>
+        <p>Since max ray depth=1, we now see the effects of 1 bounced ray. As a result, the rays bounce off the sides of the walls (background), as well as the balls in 
+            the center of the image, thus rendering them in the image. Since we have now incorporated reflection in our code, we can see that there is slight reflection 
+            of the lightsource on the surface of both balls - due to the ball's surface material. The rest of the surface of the balls are rendered black, since the max 
+            ray depth prevents any refraction from being rendered. </p>
+        
+        <table style="wdith=100%">
+          <tr>
+            <td>
+              <img src="images/task1_m_2.png" align="middle" width="600px" />
+              <figcaption align="middle">(above) Fig 1.3: CBspheres.dae rendered with max_ray_depth=2</figcaption>
+            </td>
+          </tr>
+        </table>
+        <p><b>New multibounce effects and relevance to bounce numbers:</b></p>
+        <p>Since max ray depth=2, we are now able to see the reflection of other surfaces in the image on the ball on the left. Similarly, on the ball on the right, there 
+            is a reflection of the left ball on the very left side of the right ball, as well as the purple wall's reflection on the very right side of the right ball. 
+            The front of the right ball still appears black as there are not enough ray bounces for light refraction from the light source, and there are no surfaces to 
+            reflect onto the front of the ball. The increased max ray depth allows the light rays from the source to bounce off one ball onto the opposite ball, and bounce 
+            into the "camera", thus rendering the reflection of each ball on the other one.</p>
+        
+        <table style="wdith=100%">
+          <tr>
+            <td>
+                <img src="images/task1_m_3.png" align="middle" width="600px" />
+                <figcaption align="middle">(above) Fig 1.4: CBspheres.dae rendered with max_ray_depth=3</figcaption>
+              </td>
+          </tr>
+        </table>
+        <p><b>New multibounce effects and relevance to bounce numbers:</b></p>
+        <p>Since max ray depth=3, refraction is able to be rendered on the glass balls. Specifically, the light ray exits the light source, bounces once on the surrounding 
+            sufaces (walls, ground etc.), bounces/hits again on one side of the glass ball, refracts through the glass ball, and bounces/hits a third time on the opposite side 
+            of the ball. In total, this entire process requires 3 ray bounces. As a result, the surrounding walls and surfaces are rendered on the surface of the glass balls via refraction. 
+            One key effect that demonstrates that refraction being rendered is the appearance of the back wall on the surface of the right ball. Only with reflection, the ceiling would not appear
+            on the ball from the perspective of the camera. Instead, refraction is required, as the rays from the light source need to bounce off the back wall, then hit the back surface 
+            of the ball, before being refracted and exiting the front side. Again, this requires 3 ray bounces.</p>
+
+        <table style="wdith=100%">
+          <tr>
+            <td>
+                <img src="images/task1_m_4.png" align="middle" width="600px" />
+                <figcaption align="middle">(above) Fig 1.5: CBspheres.dae rendered with max_ray_depth=4</figcaption>
+              </td>
+          </tr>
+        </table>
+        <p><b>New multibounce effects and relevance to bounce numbers:</b></p>
+        <p>Since max ray depth=4, most of the effects seen in this render have already appeared in previous renders with lower max_ray_depths. However, the biggest new multibounce 
+            effect can be seen in the right ball's reflected appearance on the left ball's surface. In the render with max_ray_depth=3, the right ball appears black on the 
+            left ball's surface. Now that max_ray_depth=4, you can see that the right ball's real appearance is shown on the left ball's surface. To achieve this apperance, light rays are 
+            exiting the light source, bouncing off the right, purple-colored wall and being refracted through the right ball (in the right to left direction). So far, this process 
+            takes 3 light bounces (refraction process as described previously). For the 4th bounce, the refracted rays exiting the right ball is now reflecting off 
+            the left glass ball and into the direction of the camera. As a result, we see that the right ball's apperance on the left ball's surface is completely purple, as that 
+            is what the right ball looks like from the left ball's perspective, due to refracted rays. 
+        </p>
+
+        <table style="wdith=100%">
+          <tr>
+            <td>
+                <img src="images/task1_m_5.png" align="middle" width="600px" />
+                <figcaption align="middle">(above) Fig 1.6: CBspheres.dae rendered with max_ray_depth=5</figcaption>
+              </td>
+          </tr>
+        </table>
+        <p><b>New multibounce effects and relevance to bounce numbers:</b></p>
+        <p>Since max ray depth=5, most of the prominent multibounce visual effects have already been rendered in previous renders with lower max_ray_depth values. The main 
+            differences now are just that there are more rays being bounced off multiple surfaces and refracted through the glass balls. This is seen by the fact that the 
+            room's ceiling is rendered brighter in the right glass ball in this render, compared to previous renders.
+        </p>
+        
+        <table>
+          <tr>
+            <td>
+                <img src="images/task1_m_100.png" align="middle" width="600px" />
+                <figcaption align="middle">(above) Fig 1.7: CBspheres.dae rendered with max_ray_depth=100</figcaption>
+              </td>
+          </tr>
+        </table>
+        <p><b>New multibounce effects and relevance to bounce numbers:</b></p>
+        <p>At max ray depth=100, there are not many (if any) visible changes compared to previous renders with lower max_ray_depth. This makes sense intuitively, since 
+            at 100 ray bounces, there is nothing new we haven't rendered before, simply we are now following each ray through significantly more bounces. As a result, the 
+            ceiling of the room on the right glass ball is even brighter than in previous renders.
+        </p>
+
+    </div>
+    <br>
+    <h3>Implementation Summary</h3> 
+    <p>To implement part 1 of this project, we completed five methods. The two most fundamental methods were the BSDF::reflect() and BSDF::refract() methods. These methods 
+        calculated the reflected/refracted ray of w0 and stored the result in wi. Consequently, BSDF::reflect() was called inside MirrorBSDF::sample_f(),
+        while BSDF:refract() was called inside RefractionBSDF::sample_f(). Both these sample_f() methods were similarly simple, and returned a Vector3D object that represented 
+        transmittance divided by the abs_cos_theta(*wi) - as well as eta^2 in the case of refraction. Finally, GlassBSDF::sample_f() was implemented to return the correct 
+        behavior out of reflection/refraction/total internal reflection. To do this, it also called the BSDF::reflect() and BSDF::refract() methods in the appropriate case.
+    </p>
+
+
+    <br>
+    <br>
+
+    <h2 align="middle">Part 4: Depth of Field</h2>
+
+    <div align="middle">
+        <h3>Pinhole camera model vs thin-lens camera model</h3>
+        <p> In the pinhole camera model, light rays travel from 
+            the real-life object, along a single straight path, through the pinhole onto a view plane. The imaged scene is upside down on the image plane. In this model, each 
+            point from the image only has one ray that is able to travel through the (ideal) pinhole and reach the image plane. This is different in the thin-lens camera model.
+        </p>
+        <p>
+            In the thin-lens camera model, rays of light travel along paths from a given point on the real object through the lens and converge on an image plane behind the lens. 
+            The image is also upside down. The difference to the pinhole model is that each point has many rays that are emitted and reach the image plane. What the thin lens does is 
+            converge those "bundles" of rays from a given point to the image plane. The effect is that more "useful information" (signals) are passed through the lens compared to the pinhole,
+            while still minimizing blurring.
+        </p>
+
+        <h3>Focus stack (varying focal distance)</h3>
+
+        <h3>Aperture stack (varying aperture size)</h3>
+
+    </div>
+
+    <br>
+    <h3>Implementation Summary</h3> 
+    <p>To implement part 4 of this project, only one method was written, which was RayCamera::generate_ray_for_thin_lens(). This method required sampling a point on the thin lens 
+        using the equation given in the spec, followed by calculating the "blue", exiting ray (exiting from the thin lens) based on the position of the lens and the calculated 
+        vector for pFocus - the plane of focus. The method returned the "blue", exiting ray, which is the generated ray for the thin lens. 
+    </p>
+
+    <br>
+    <h2 align="middle">Collaboration Review</h2>
+    <p>This project was a lot simpler and shorter compared to project 3.1. As a result, we were both able to complete part 1 and part 4 individually. Ahmed started the project before Ethan did,
+        so Ahmed was able to help guide Ethan throughout the code writing process. In Ethan's case, he had trouble rendering the images using the staff solution, because 
+        the staff's code was incompatible with the new Apple M1 chip on Ethan's computer. As a result, Ahmed helped to render the images seen in this writeup on his own computer. 
+        Ethan took more charge in the writing portion of this writeup. 
+    </p>
+
+    <br>
+
+    <p align="center">
+        <a href="https://cal-cs184-student.github.io/sp22-project-webpages-ethanyxchen/proj3-2/index.html">Click here to navigate to project webpage </a>
+    </p>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+    <br>
+
+</div>
+</body>
 </html>
+
+
+
+
