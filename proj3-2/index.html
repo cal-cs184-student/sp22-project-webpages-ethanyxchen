@@ -43,7 +43,7 @@
         <p><b>New multibounce effects and relevance to bounce numbers:</b></p>
         <p>Since max ray depth=0, no rays are bounced, meaning only the ray directly coming from the light source is rendered.</p>
        
-        <table style="wdith=100%">
+        <table style="width=100%">
           <tr>
             <td>
                 <img src="images/task1_m_1.png" align="middle" width="600px" />
@@ -57,7 +57,7 @@
             of the lightsource on the surface of both balls - due to the ball's surface material. The rest of the surface of the balls are rendered black, since the max 
             ray depth prevents any refraction from being rendered. </p>
         
-        <table style="wdith=100%">
+        <table style="width=100%">
           <tr>
             <td>
               <img src="images/task1_m_2.png" align="middle" width="600px" />
@@ -72,7 +72,7 @@
             reflect onto the front of the ball. The increased max ray depth allows the light rays from the source to bounce off one ball onto the opposite ball, and bounce 
             into the "camera", thus rendering the reflection of each ball on the other one.</p>
         
-        <table style="wdith=100%">
+        <table style="width=100%">
           <tr>
             <td>
                 <img src="images/task1_m_3.png" align="middle" width="600px" />
@@ -88,7 +88,7 @@
             on the ball from the perspective of the camera. Instead, refraction is required, as the rays from the light source need to bounce off the back wall, then hit the back surface 
             of the ball, before being refracted and exiting the front side. Again, this requires 3 ray bounces.</p>
 
-        <table style="wdith=100%">
+        <table style="width=100%">
           <tr>
             <td>
                 <img src="images/task1_m_4.png" align="middle" width="600px" />
@@ -106,7 +106,7 @@
             is what the right ball looks like from the left ball's perspective, due to refracted rays. 
         </p>
 
-        <table style="wdith=100%">
+        <table style="width=100%">
           <tr>
             <td>
                 <img src="images/task1_m_5.png" align="middle" width="600px" />
@@ -150,22 +150,133 @@
 
     <h2 align="middle">Part 4: Depth of Field</h2>
 
+    <h3>Pinhole camera model vs thin-lens camera model</h3>
+    <p> In the pinhole camera model, light rays travel from 
+        the real-life object, along a single straight path, through the pinhole onto a view plane. The imaged scene is upside down on the image plane. In this model, each 
+        point from the image only has one ray that is able to travel through the (ideal) pinhole and reach the image plane. This is different in the thin-lens camera model.
+    </p>
+    <p>
+        In the thin-lens camera model, rays of light travel along paths from a given point on the real object through the lens and converge on an image plane behind the lens. 
+        The image is also upside down. The difference to the pinhole model is that each point has many rays that are emitted and reach the image plane. What the thin lens does is 
+        converge those "bundles" of rays from a given point to the image plane. The effect is that more "useful information" (signals) are passed through the lens compared to the pinhole,
+        while still minimizing blurring.
+    </p>
+
+    <br>
+
+    <h3>Focus stack (varying focal distance)</h3>
     <div align="middle">
-        <h3>Pinhole camera model vs thin-lens camera model</h3>
-        <p> In the pinhole camera model, light rays travel from 
-            the real-life object, along a single straight path, through the pinhole onto a view plane. The imaged scene is upside down on the image plane. In this model, each 
-            point from the image only has one ray that is able to travel through the (ideal) pinhole and reach the image plane. This is different in the thin-lens camera model.
-        </p>
-        <p>
-            In the thin-lens camera model, rays of light travel along paths from a given point on the real object through the lens and converge on an image plane behind the lens. 
-            The image is also upside down. The difference to the pinhole model is that each point has many rays that are emitted and reach the image plane. What the thin lens does is 
-            converge those "bundles" of rays from a given point to the image plane. The effect is that more "useful information" (signals) are passed through the lens compared to the pinhole,
-            while still minimizing blurring.
-        </p>
+    <table style="width=100%">
+        <tr>
+          <td>
+            <img src="images/focal_distance_diagram.jpg" align="middle" width="600px" />
+            <figcaption align="middle">(above) Fig 4.0: Focal distance ray diagram</figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
 
-        <h3>Focus stack (varying focal distance)</h3>
+    <p>The following CBdragon.dae renders demonstrate how changing the focal distance affects the blurriness of the rendered image. The initial focal distance was d=4.5,
+        which as shown below, renders the dragon's mouth very crisply, whereas the tail is blurred. Focal distances less than d=4.5, including d=3.5 and d=4.0, are generally
+        even blurrier, whereas the focal distance larger than d=4.5, specifically d=5.0, renders the dragon's tail clearly and dragon's mouth blurred. If we look at the ray
+        diagram included above, this behavior can be explained by where we position the sensor plane relative to the lens - i.e. the focal distance. When the lens is to the 
+        left of where the light rays intersect, i.e. when the focal distance was d=3.5 and d=4.0, then the entire image if blurred because the light rays are not converging 
+        where we position the sensor plane. Whereas, when we position the sensor plane slightly behind (to the right) where the rays converge, i.e. when focal distance d=5.0, 
+        then the front of the image is similarly blurred, but the back of the image is clearer. When d=4.5, we get the "defocus blur" effect, where the background is blurred out
+        and the dragon's face is clear and crisp, similar to the iPhone's portrait mode.
+    </p>
 
-        <h3>Aperture stack (varying aperture size)</h3>
+    <p>Please note that for the focus stack and aperture stack, the CBDragon.dae render was used, instead of CBdragon_microfacet_au.dae, because we did not implement the 
+        microfacet methods, which were part of Part 2 of the spec, which we did not complete as part of this assignment.
+    </p>
+
+    <div align="middle">
+        <table style="width=100%">
+            <tr>
+              <td>
+                  <img src="images/task4_d_3.5.png" align="middle" width="600px" />
+                  <figcaption align="middle">(above) Fig 4.1.1: CBdragon.dae rendered with focal distance <b>d=3.5</b> and aperture b=0.1</figcaption>
+                </td>
+            </tr>
+        </table>
+        <table style="width=100%">
+            <tr>
+              <td>
+                  <img src="images/task4_d_4.png" align="middle" width="600px" />
+                  <figcaption align="middle">(above) Fig 4.1.2: CBdragon.dae rendered with focal distance <b>d=4.0</b> and aperture size b=0.1</figcaption>
+                </td>
+            </tr>
+        </table>
+        <table style="width=100%">
+            <tr>
+              <td>
+                  <img src="images/task4_d_4.5.png" align="middle" width="600px" />
+                  <figcaption align="middle">(above) Fig 4.1.3: CBdragon.dae rendered with focal distance <b>d=4.5</b> and aperture size b=0.1</figcaption>
+                </td>
+            </tr>
+        </table>
+        <table style="width=100%">
+            <tr>
+              <td>
+                  <img src="images/task4_d_5.png" align="middle" width="600px" />
+                  <figcaption align="middle">(above) Fig 4.1.4: CBdragon.dae rendered with focal distance <b>d=5.0 and </b>aperture size b=0.1</figcaption>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <br>
+
+    
+    <h3>Aperture stack (varying aperture size)</h3>
+    
+    <p>The following renders demonstrate how increasing the aperture size of the camera allows more light onto the sensor plane, causing the image to get washed out and 
+        become increasingly blurry. The first render, where the aperture size is set to b=0.5, is the best render, as it is most similar to the pinhole camera model, where
+        the aperture size is as small as possible. Larger aperture sizes are more appropriate when there is less nature light in the scene, and we want to allow as much light
+        as possible onto the sensor plane so that the rendered image is actually visible.
+    </p>
+    <br>
+    <div align="middle">
+        <table style="width=100%">
+            <tr>
+              <td>
+                  <img src="images/task4_b_0.5.png" align="middle" width="600px" />
+                  <figcaption align="middle">(above) Fig 4.2.1: CBdragon.dae rendered with focal distance d=4.5 and aperture size <b>b=0.5</b></figcaption>
+                </td>
+            </tr>
+        </table>
+        <table style="width=100%">
+            <tr>
+              <td>
+                  <img src="images/task4_b_1.5.png" align="middle" width="600px" />
+                  <figcaption align="middle">(above) Fig 4.2.2: CBdragon.dae rendered with focal distance d=4.5 and aperture size <b>b=1.5</b></figcaption>
+                </td>
+            </tr>
+        </table>
+        <table style="width=100%">
+            <tr>
+              <td>
+                  <img src="images/task4_b_2.5.png" align="middle" width="600px" />
+                  <figcaption align="middle">(above) Fig 4.2.3: CBdragon.dae rendered with focal distance d=4.5 and aperture size <b>b=2.5</b></figcaption>
+                </td>
+            </tr>
+        </table>
+        <table style="width=100%">
+            <tr>
+              <td>
+                  <img src="images/task4_b_3.5.png" align="middle" width="600px" />
+                  <figcaption align="middle">(above) Fig 4.2.4: CBdragon.dae rendered with focal distance d=4.5 and aperture size <b>b=3.5</b></figcaption>
+                </td>
+            </tr>
+        </table>
+        <table style="width=100%">
+            <tr>
+              <td>
+                  <img src="images/task4_b_4.5.png" align="middle" width="600px" />
+                  <figcaption align="middle">(above) Fig 4.2.5: CBdragon.dae rendered with focal distance d=4.5 and aperture size <b>b=4.5</b></figcaption>
+                </td>
+            </tr>
+        </table>
 
     </div>
 
