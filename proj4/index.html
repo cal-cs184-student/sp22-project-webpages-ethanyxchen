@@ -1,7 +1,700 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 4 here
-	</body>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Project 4 - Cloth Simulator</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h1>
+<h1 align="middle">Project 4: Cloth Simulator</h1>
+<h2 align="middle">Ahmed Baqai and Ethan Chen, CS184-p4-clothsim-sp22-harrystyles</h2>
+
+<br>
+
+<h2 align="middle">Overview</h2>
+<p>In this project, we learned a lot about how to render surfaces and its interactions with itself, as well as other objects. In part 1, we built the fundamentals of a 
+  surface, which included creating the point masses and springs. When implementing this code, we largely just had to be careful of how we indexed into the relevant arrays, 
+  due to the design of our implementation. In part 2, we looked at how to simulate one timestep of an animation. This involved calculating the relevant forces and applying 
+  them to the springs, as well as position changes for the point masses. We ran into an initial problem where the animation took much too long, but these were just due to 
+  minor bugs in our implemented calculations. In part 3 and 4, we looked at how our surface - the cloth - interacted with collisions with other objects, as well as itself. 
+  Part 3 was relatively straightforward, while part 4 was more complicated in its use of a hashing function to improve efficiency of collision detection. The major problem 
+  we encountered in part 4 was that our hashing function was computationally expensive and inefficient (we were multiplying by 1/1000), and since so many hashing 
+  calculations are required every timestep, the animation for self-collision detection was extremely slow. Once we simplified our hashing function, our animation was much 
+  smoother and faster. Part 5 was the most interesting part of this project, as we focused on rendering different surfaces on the cloth and ball. Tasks 1-3, as well as 5, 
+  in part 5 were relatively straightforward, while task 4 was more difficult. Specifically, getting our head around how all the calculations worked together took a bit of 
+  time. </p>
+
+  <p>Reflecting on how we worked together for this project, we found that implementing the code individually was the best way to understand the content. Ahmed was faster 
+    at working through the code, and was able to help Ethan with his bugs. Similarly, Ethan was also able to identify some minor bugs in Ahmed’s earlier implementations. 
+    The task 5 code was mostly written by Ahmed, while the writeup was mostly written by Ethan. In doing so, we both managed to get a good understanding of the content. 
+  </p>
+
+<div align="middle">
+  <h2>Contents</h2>
+  <table>
+    <tr>
+      <td align="center"><a href="#part1">Part 1: Masses and Springs</a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="#part2">Part 2: Simulation via numerical integration</a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="#part3">Part 3: Handling collisions with other objects</a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="#part4">Part 4: Handling self-collisions</a></td>
+    </tr>
+    <tr>
+      <td align="center"><a href="#part5">Part 5: Shaders</a></td>
+    </tr>
+  </table>
+</div>
+
+
+<h2 align="middle" id="part1">Part 1: Masses and Springs</h2>
+<p>In part 1 of this project, we implementing the <b>buildGrid()</b> function, which builds a grid of points and springs, depending on the following parameters: 
+  width, height, num_width_points, and num_height_points.</p>
+
+<p>Below are screenshots of <b>scene/pinned2.json</b> where you can clearly see the structure of the point masses and springs. Each vertex in the grid represents a point mass,
+while each line connecting the vertices represents a spring of a certain type: structural, shearing, or bending.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="img/t1_all_constraints.png" align="middle" width="600px" />
+        <figcaption align="middle">Fig 1.1: Cloth wireframe with all constraints.</figcaption>
+        
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="img/t1_no_shearing.png" align="middle" width="600px" />
+        <figcaption align="middle">Fig 1.2: Cloth wireframe without any shearing constraints.</figcaption>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <img src="img/t1_only_shearing.png" align="middle" width="600px" />
+        <figcaption align="middle">Fig 1.3: Cloth wireframe with only shearing constraints.</figcaption>
+      </td>
+    </tr>
+    <br>
+  </table>
+</div>
+
+<br>
+
+<h2 align="middle" id ="part2">Part 2: Simulation via numerical integration</h2>
+
+<p>Part 2 of this project involved implementing the simulate() method that runs one time-step of the simulation. Several parameters can be changed to adjust the simulation,
+  including spring constant: ks, point mass density and damping value. </p>
+
+  <h3 align="middle">The effect of adjusting the spring constant, ks</h3>
+
+  <p>The following screenshot is of the pinned cloth with the spring constant set to the default value, ks = 5000 N/m.</p>
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="img/t2_ks_5000.png" align="middle" width="600px" />
+          <figcaption align="middle">Fig 2.1: Pinned cloth wireframe with default spring constant <b>ks=5000 N/m</b></figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <p>As shown below (figure 2.2), when ks is set to a very low value, the cloth appears visibly more loose between point masses. This is most evident in how the cloth “hangs” between the fixed points. 
+    With a very low ks, specifically ks=0.1 N/m, the cloth makes a smooth U-shape between the fixed points, whereas with a higher ks, specifically ks=5000 N/m, the cloth 
+    still droops, but not as drastically as with the very low ks. In fact, when pausing the simulation midway with a low ks and unpausing it with a higher one, the 
+    cloth almost bounces/rebounds up from its low hanging U-shape to a more tense dropping shape. </p>
+  
+  <div align="middle">
+    <table>
+      <tr>
+        <td>
+          <img src="img/t2_ks_0.1.png" align="middle" width="600px" />
+          <figcaption align="middle">Fig 2.2: Pinned cloth wireframe with low spring constant <b>ks=0.1 N/m</b></figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+    <p>Likewise, as shown in figure 2.3, when ks is set to a very high value, specifically ks=50000 N/m, the cloth is visibly more stiff. With a high ks, the cloth is nearly a straight line between
+       the 2 fixed points, whereas with a mid-value for ks, specifically ks=5000 N/m, the cloth is more elastic, and more similar to the U-shape seen with a very low spring 
+       constant. </p>
+
+  <div align="middle">
+    <table>
+      <tr>
+        <td>
+          <img src="img/t2_ks_50000.png"align="middle" width="600px" />
+          <figcaption align="middle">Fig 2.3: Pinned cloth wireframe with high spring constant <b>ks=50000 N/m</b></figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+    <p>This is all expected behavior, because the higher the spring constant, the stiffer the springs are, meaning that when ks is very high, gravity alone is not strong
+       enough to extend the springs enough to create the U-shape seen when ks is lower. Likewise, with a very low spring constant, the springs are very easy to extend and 
+       it does not take much force to pull the cloth down to see its U-shape between the fixed points. </p>
+  
+
+  <br>
+
+  <h3 align="middle">The effect of adjusting the density of point masses</h3>
+
+  
+  <p>The difference in cloth behavior with high and low density is somewhat similar to its behavior with a low spring constant and high spring constant respectively.</p>
+
+  <p>The screenshot below is of the pinned cloth dropping animation with default values.</p>
+  
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="img/t2_density_15.png" align="middle" width="600px" />
+          <figcaption align="middle">Fig 2.4: Pinned cloth wireframe with the default density value: <b>density=15 g/cm^2</b></figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <p>As shown below in figure 2.5, a high density of points means that the point masses are closer together, which means that the rest position of each spring is less. 
+    When the rest positions of the springs are smaller, then the cloth is going to become more malleable and reactionary to forces applied. The cloth is less smooth and 
+    more jagged and uneven during the dropping animation, as there are more point masses (and thus springs) in a given area (high density) to accurately reflect the forces 
+    being applied. 
+  </p>
+
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="img/t2_density_100.png" align="middle" width="600px" />
+          <figcaption align="middle">Fig 2.5: Pinned cloth wireframe with high <b>density=100 g/cm^2</b></figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <p>In contrast, when density is low (figure 2.6), then the points are naturally more spread apart and the rest lengths of springs are higher. Thus, when the cloth is hanging, the 
+      overall appearance is smoother, as there are less point masses and springs in a given area to reflect the forces being applied.</p>
+  
+  <div align="middle">
+    <table>
+      <tr>
+        <td>
+          <img src="img/t2_density_1.png" align="middle" width="600px" />
+          <figcaption align="middle">Fig 2.6: Pinned cloth wireframe with low <b>density=1 g/cm^2</b></figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <p>We will see later on in Part 3 of this project how density of point masses, as well as spring constants, can affect how malleable the cloth is. For now, we have seen 
+    from this analysis that a higher density of point masses allows for a more malleable cloth, as there are more point masses and springs to illustrate how a force is applied
+    on the cloth as a whole. In fact, as shown in figure 2.5, with a very high density of point masses, the springs between each point mass end up exacerbating the effects
+    of the original force applied. Specifically, one could argue there is a "domino" effect among so many springs in a small area, causing the cloth to be much less smooth 
+    and more jagged as the point masses are constantly being shifted due to all the forces bouncing between springs.
+  </p>
+
+
+  <br>
+
+  <h3 align="middle">The effect of adjusting the damping value</h3>
+
+  <p>The damping value we assign during these simulations correspond to how impactful the forces applied to each point mass and spring are for each timestep. Specifically, 
+    in our verlet integration calculations, the position change for a given timestep for each point mass has the term: 1 - damping_value, therefore, the magnitude of the 
+    position change for each point mass in 1 time step is inversely related to the damping value. </p>
+
+  <p>The screenshot below is of the pinned cloth dropping animation with default values.</p>
+  
+    <div align="middle">
+      <table style="width=100%">
+        <tr>
+          <td>
+            <img src="img/t2_density_15.png" align="middle" width="600px" />
+            <figcaption align="middle">Fig 2.7: Pinned cloth wireframe with the default damping value: <b>damping value = 0.2</b></figcaption>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <p>As shown below in figure 2.8, when we set a low damping value, the cloth’s falling animation is significantly faster than with a high damping value. Not only that, but the cloth 
+      appearance between the 2 hanging points is rough and jagged compared to its corresponding appearance with a the default damping value, which is higher. This is expected, because with large 
+      point mass position changes in a short amount of time, the forces (and rebounding forces) applied to each spring at each timestep are likely going to be high, causing 
+      the point masses to vary in large distances across time steps, almost giving a “jumping around” animation. Thus, the cloth does not have a smooth appearance. </p>
+
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="img/t2_damping_0.05.png" align="middle" width="600px" />
+          <figcaption align="middle">Fig 2.8: Pinned cloth wireframe with a low damping value: <b>damping value = 0.05</b></figcaption>
+        </td>
+      </tr>
+    </table>
+  </div>
+
+  <p>In comparison, as shown below in figure 2.9, a high damping value causes the cloth’s falling animation to be much more gradual and smooth. As we can see from the 
+    screenshots, the cloth appearance between the 2 hanging points is very smooth, because the point mass position changes in each time step is going to be smaller. 
+    Similarly, the forces applied to the springs at each timestep are going to be smaller causing the dropping animation to be slower and smoother. </p>
+
+  <p>The following pinned cloth dropping animation with a high damping value took longer than with a high damping value, thus 2 images were rendered to demonstrate how 
+    the longer animation evolved.</p>
+
+  <div align="middle">
+    <table>
+      <tr>
+        <td>
+          <img src="img/t2_damping_0.9.png" align="middle" width="500px" />
+        </td>
+        <td>
+          <img src="img/t2_damping_0.9_2.png" align="middle" width="500px" />
+        </td>
+      </tr>
+    </table>
+    <figcaption align="middle">Fig 2.9: Pinned cloth wireframe with a high damping value: <b>damping value = 0.9</b></figcaption>
+  </div>
+
+  <br>
+
+  <h2 align="middle" id="part3">Part 3: Handling collisions with other objects</h2>
+
+  <p>In part 3 of this project, we look at how the cloth collides with other objects, including a sphere and a flat plane. We look at how changing the spring constant 
+    for the springs that construct the cloth affect how the collision appears in our renders.
+  </p>
+
+  <div align="middle">
+    <table>
+      <tr>
+        <td>
+          <img src="img/t3_ks_500.png" align="middle" width="333px" />
+          <figcaption align="middle">Spring constant value: <b>ks = 500</b></figcaption>
+        </td>
+        <td>
+          <img src="img/t3_ks_5000.png" align="middle" width="333px" />
+          <figcaption align="middle">Spring constant value: <b>ks = 5000</b></figcaption>
+        </td>
+        <td>
+          <img src="img/t3_ks_50000.png" align="middle" width="333px" />
+          <figcaption align="middle">Spring constant value: <b>ks = 50000</b></figcaption>
+        </td>
+      </tr>
+    </table>
+    <figcaption align="middle">Fig 3.1: Pinned cloth wireframe colliding with a sphere</figcaption>
+  </div>
+
+  <br>
+
+  <p>The three images above are from lowest (ks=500) to highest (ks=50000) spring constant.</p>
+
+  <p>The spring constant reflects how malleable the cloth can be. When the spring constant is low, the stretchiness of each spring is highest, meaning that that cloth 
+    can accurately wrap itself around the ball. In fact, the cloth can wrap itself entirely around the top half of the sphere. </p>
+  <p>In contrast, when the spring constant is high, the stretchiness of each spring is low, meaning that the springs that make up the cloth do not stretch as far, causing 
+    the cloth to be more rigid in its shape. As a result, it cannot wrap itself around the sphere in the render on the right - instead, we get these folds in the cloth. </p>
+  
+  <p>In the middle image, when ks=5000 N/m, we get a combination of the appearances in the render with low and high spring constants. Specifically, the cloth wraps around 
+    the ball better when ks=5000 N/m than when ks=50000 N/m, but there are still more folds in the cloth than when ks=500 N/m. </p>
+  
+  <br>
+
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="img/t3_plane_resting.png" align="middle" width="500px" />
+        </td>
+        <td>
+          <img src="img/t3_plane_resting_2.png" align="middle" width="500px" />
+        </td>
+      </tr>
+    </table>
+    <figcaption align="middle">Fig 3.2: Pinned cloth wireframe colliding with a flat plane. It rests peacefully on the plane.</figcaption>
+  </div>
+
+<br>
+
+<h2 align="middle" id="part4">Part 4: Handling self-collisions</h2>
+<p>In part 4 of this project, we implemented our cloth simulator to handle self-collisions, for example, to realistically render a cloth falling onto the ground and hitting 
+  itself in the process. The following images document how the cloth falls and folds onto itself when the default settings are used.
+</p>
+
+<div align="middle">
+
+  <h3>Default settings</h3>
+
+  <table>
+    <tr>
+      <td>
+        <img src="img/t4_default_starting.png" align="middle" width="333px" />
+        <figcaption align="middle">Default settings : starting state</figcaption>
+      </td>
+      <td>
+        <img src="img/t4_default_initial.png" align="middle" width="333px" />
+        <figcaption align="middle">Default settings : initial collision state</b></figcaption>
+      </td>
+      <td>
+        <img src="img/t4_default_end.png" align="middle" width="333px" />
+        <figcaption align="middle">Default settings : ending state</b></figcaption>
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 4.1: Cloth self-colliding simulation under default settings</figcaption>
+  <figcaption align="middle">Density = 15 /cm^2, spring constant = 5000 N/m</figcaption>
+</div>
+
+  <br>
+<div align="middle">
+  <h3>Varying Density</h3>
+
+  <table>
+    <tr>
+      <td>
+        <img src="img/t4_high_density_start.png" align="middle" width="333px" />
+        <figcaption align="middle">High density : starting state</figcaption>
+      </td>
+      <td>
+        <img src="img/t4_high_density_initial.png" align="middle" width="333px" />
+        <figcaption align="middle">High density : initial collision state</b></figcaption>
+      </td>
+      <td>
+        <img src="img/t4_high_density_end.png" align="middle" width="333px" />
+        <figcaption align="middle">High density : ending state</b></figcaption>
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 4.2: Cloth self-colliding simulation, when density is set to <b>high</b></figcaption>
+  <figcaption align="middle">Density = 100 g/cm^2</figcaption>
+</div>
+
+  <br>
+  <br>
+
+<div align="middle">
+  <table>
+    <tr>
+      <td>
+        <img src="img/t4_low_density_start.png" align="middle" width="333px" />
+        <figcaption align="middle">Low density : starting state</figcaption>
+      </td>
+      <td>
+        <img src="img/t4_low_density_initial.png" align="middle" width="333px" />
+        <figcaption align="middle">Low density : initial collision state</b></figcaption>
+      </td>
+      <td>
+        <img src="img/t4_low_density_end.png" align="middle" width="333px" />
+        <figcaption align="middle">Low density : ending state</b></figcaption>
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 4.3: Cloth self-colliding simulation, when density is set to <b>low</b>></figcaption>
+  <figcaption align="middle">Density = 1 g/cm^2</figcaption>
+</div>
+
+<br>
+<p>Changing the density affects how close the point masses are together in the construction of the cloth. From the series of screenshots above, we can see that this 
+  affects where folds can occur when the cloth falls onto itself. Specifically, with high density, the point masses are very close together in the mesh forming the cloth, 
+  and thus folds and creases can take place at more locations. This can be seen by the fact that there are more folds and creases in the cloth compared to default and low 
+  density renders, especially at the initial moment the cloth folds on itself. In contrast, when the density of point masses is low, then the folds are much larger, and 
+  we see less creases. Low density construction of the cloth appears more realistic to how cloths fold onto itself in real life. 
+</p>
+
+<br>
+<br>
+
+<div align="middle">
+  <h3>Varying Spring Constant Value</h3>
+  <table>
+    <tr>
+      <td>
+        <img src="img/t4_high_ks_start.png" align="middle" width="333px" />
+        <figcaption align="middle">High spring constant : starting state</figcaption>
+      </td>
+      <td>
+        <img src="img/t4_high_ks_initial.png" align="middle" width="333px" />
+        <figcaption align="middle">High spring constant : initial collision state</b></figcaption>
+      </td>
+      <td>
+        <img src="img/t4_high_ks_end.png" align="middle" width="333px" />
+        <figcaption align="middle">High spring constant : ending state</b></figcaption>
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 4.4: Cloth self-colliding simulation, when spring constant is set to <b>high</b></figcaption>
+  <figcaption align="middle">Density = 50000 N/m</figcaption>
+</div>
+
+  <br>
+  <br>
+
+<div align="middle">
+  <table>
+    <tr>
+      <td>
+        <img src="img/t4_low_ks_start.png" align="middle" width="333px" />
+        <figcaption align="middle">Low spring constant : starting state</figcaption>
+      </td>
+      <td>
+        <img src="img/t4_low_ks_initial.png" align="middle" width="333px" />
+        <figcaption align="middle">Low spring constant : initial collision state</b></figcaption>
+      </td>
+      <td>
+        <img src="img/t4_low_ks_end.png" align="middle" width="333px" />
+        <figcaption align="middle">Low spring constant : ending state</b></figcaption>
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 4.5: Cloth self-colliding simulation, when spring constant is set to <b>low</b></figcaption>
+  <figcaption align="middle">Density = 500 N/m</figcaption>
+</div>
+
+<br>
+
+<p>The spring constant also affects the granularity to which folds and creases occur on the cloth when it folds into itself. Similar to how the spring constant affects 
+  how well the cloth molds around the sphere in part 3, we can explain the varying behavior of how the cloth folds into itself by looking at how the spring constant 
+  affects the malleability of the cloth. </p>
+
+<p>When the spring constant is low, the springs that make up the construction of the cloth easily stretch and compress, meaning that the cloth is able to make folds and 
+  creases much more easily, as seen in the screenshot when the cloth initially folds into itself. In contrast, when the spring constant is large, the cloth is more stiff, 
+  meaning that folds are harder to make. As shown in the screenshot, a fold can only occur when more of the cloth is on top of the folding edge - i.e. a larger mass will 
+  lead to a higher downward force due to gravity that can cause a fold in the cloth. As a result, the first fold in the high spring constant render comes further up the 
+  cloth than the first crease in the low spring constant render. </p>
+
+
+
+<br>
+
+<h2 align="middle" id="part5">Part 5: Shaders</h2>
+
+<h3>Shader Programs: Vertex and Fragment</h3>
+
+<p>
+  Shaders are programs that run in parallel on the GPU that output a single 4 dimensional vector. They execute sections of the graphics pipeline that can run in parallel 
+  and are not dependent on sequential execution. The two types of shaders introduced in this project were vertex shaders and fragment shaders. 
+</p>
+
+<p>
+  Vertex shaders alter vertices by applying transformations to them, essentially changing their coordinates and geometric attributes. Fragment shaders on the other hand 
+  correspond to a fragment which can be seen as a little chunk on the screen. These shaders alter the color of the fragment according to their instructions  using attributes 
+  from vertex shading. Together, these shaders work together to alter and adapt the geometric and visual attributes of a rendered image.
+</p>
+
+<br>
+
+<h3>Task 5.2: Blinn-Phong</h3>
+<p>Blinn-Phong shading model is an approximation of lighting specifically catered to having realistic specular lighting on objects alongside ambient and diffuse lighting. 
+  It is an updated version of the Phong shading model. The problem with the Phong shading model was that the angle between the view vector and reflection vector had to be 
+  below 90 degrees for the specular term to be non zero. Blinn-Phong erases this problem by comparing the half vector of the reflection and view vectors with the surface 
+  normal, ultimately yielding a more reliable specular term. </p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="img/p5_phong_entire.png" align="middle" width="600px" />
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 5.1: Cloth on sphere rendered using the Blinn-Phong shader using the entire Blinn-Phong model, including ambient, diffuse, and 
+    specular components</b></figcaption>
+</div>
+
+<div align="middle">
+  <table>
+    <tr>
+      <td>
+        <img src="img/p5_phong_ambient_only.png" align="middle" width="333px" />
+        <figcaption align="middle">Ambient component only</figcaption>
+      </td>
+      <td>
+        <img src="img/p5_phong_diffuse_only.png" align="middle" width="333px" />
+        <figcaption align="middle">Diffuse component only</figcaption>
+      </td>
+      <td>
+        <img src="img/p5_phong_specular_only.png" align="middle" width="333px" />
+        <figcaption align="middle">Specular component only</figcaption>
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 5.2: Cloth on sphere rendered with different Blinn-Phong components</figcaption>
+</div>
+
+<br>
+
+<h3>Task 5.3: Texture Mapping</h3>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="img/p5_custom_texture_start.png" align="middle" width="500px" />
+      </td>
+      <td>
+        <img src="img/p5_custom_texture_end.png" align="middle" width="500px" />
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 5.3: Custom texture mapped onto the ball and cloth</b></figcaption>
+</div>
+
+<br>
+
+<h3>Task 5.4: Bump and Displacement Mapping</h3>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="img/p5_bump_ball.png" align="middle" width="500px" />
+      </td>
+      <td>
+        <img src="img/p5_bump_cloth.png" align="middle" width="500px" />
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 5.4: Bump mapping render on the ball and cloth</b></figcaption>
+</div>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="img/p5_displacement_ball.png" align="middle" width="500px" />
+      </td>
+      <td>
+        <img src="img/p5_displacement_cloth.png" align="middle" width="500px" />
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 5.5: Displacement mapping render on the ball and cloth</b></figcaption>
+</div>
+
+<p>Comparing the bump and displacement shaders, we can see that the displacement shaders also implemented the height map in addition to modifying the normals to be 
+  consistent with the new geometry. In the textures that we rendered, this is less impactful since they are originally 2D textures, anyway, but with 3D textures, the 
+  displacement shader would most likely render more realistic textures. Specifically, in the next section, we look at how resolution affects how the textures are rendered. 
+  In that comparison, we use a high-resolution stone texture, which benefits more from the displacement shader that renders 3D surfaces better. </p>
+
+<br>
+
+<h3>Task 5.4 continued: comparing resolutions</h3>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="img/p5_16_resolution.png" align="middle" width="500px" />
+        <figcaption align="middle">Resolution = 16</figcaption>
+      </td>
+      <td>
+        <img src="img/p5_128_resolution.png" align="middle" width="500px" />
+        <figcaption align="middle">Resolution = 128</figcaption>
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 5.6.1: Resolution changes' impact on bump mapping of ball texture</b></figcaption>
+</div>
+
+<p>In the comparison above, we compare how changing the resolution  affects how bump mapping renders the ball's texture. It is difficult to see at first, but 
+  having a lower resolution, specifically resolution = 16, affects the smoothness of the spherical shape. A high resolution renders the ball with a very smooth surface, 
+  whereas with a lower resolution, you can see that the ball's spherical shape is visibly made up of straight lines with sharp vertices connected together is a circular shape.
+  To better illustrate this, we included a render with resolution = 4, which makes the non-spherical shape of the ball much clearer - in fact, it becomes an octagon instead 
+  of a sphere when resolution = 4. However, since bump mapping leaves the ball completely flat and without any bumps, the effect of changing resolution is not particularly strong, 
+  except in the extreme case shown below in figure 5.6.2.
+</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="img/p5_4_resolution.png" align="middle" width="600px" />
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 5.6.2: Bump mapping of ball texture with resolution = 4</figcaption>
+</div>
+
+<br>
+
+<p>The effect of changing the resolution is made clearer when we look at the displacement mapping of the ball texture.</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="img/p5_displacement_16.png" align="middle" width="500px" />
+        <figcaption align="middle">Resolution = 16</figcaption>
+      </td>
+      <td>
+        <img src="img/p5_displacement_128.png" align="middle" width="500px" />
+        <figcaption align="middle">Resolution = 128</figcaption>
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 5.7.1: Resolution changes' impact on displacement mapping of ball texture</b></figcaption>
+</div>
+
+<p>Comparing the two renders above, we no longer just look at the smoothness of the sphere's surface, but how the height map is reflected in the render. Specifically, with 
+  a higher resolution, we see that many more bumps are rendered on the surface. For a high resolution texture, like the one used above, higher resolution renders definitely 
+  help a lot in creating a realistic texture. As shown in figure 5.7.2, when the resolution is extremely low, e.g. resolution=4, then the 
+  effect of displacement mapping is virtually unnoticeable due to the lack of resolution in the render.
+</p>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="img/p5_displacement_4.png" align="middle" width="600px" />
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 5.7.2: Displacement mapping of ball texture with resolution = 4</figcaption>
+</div>
+
+<br>
+<h3>Task 5.5: Environment-mapped Reflections</h3>
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="img/p5_mirror_start.png" align="middle" width="500px" />
+      </td>
+      <td>
+        <img src="img/p5_mirror_end.png" align="middle" width="500px" />
+      </td>
+    </tr>
+  </table>
+  <figcaption align="middle">Fig 5.8: Mirror (environment-mapped reflections) rendered on the ball and cloth</b></figcaption>
+</div>
+
+
+<br>
+<br>
+<br>
+
+<p align="center">
+  <a href="https://cal-cs184-student.github.io/sp22-project-webpages-ethanyxchen/proj4/index.html">Click here to navigate to project webpage </a>
+</p>
+
+
+</body>
 </html>
